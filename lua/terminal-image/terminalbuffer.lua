@@ -51,31 +51,26 @@ function M:update()
 end
 
 function M:add(firstline, lastline)
+	local ns = vim.api.nvim_create_namespace("terminal-image.nvim")
 	for i = firstline + 1, lastline do
 		if not self.imgs[i] then
 			local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
-			if line then
-				-- check if the line contains an image
-				local img = line:match("^hello")
-				-- hide this line
-
-				if img then
-					local image_path = "/Users/colin.torney/workspace/test/im.png"
-					local pos = { i + 1, 0 }
-					img = Snacks.image.placement.new(self.buf, image_path, {
-						pos = pos,
-						inline = true,
-						conceal = true,
-						type = "terminal",
-					})
-					self.imgs[i] = img
-					local ns = vim.api.nvim_create_namespace("my_terminal_marks")
-					vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
-						virt_text = { { string.rep(" ", #line) } }, -- Virtual text matching the exact line length
-						virt_text_pos = "overlay",
-						priority = 100,
-					})
-				end
+			if line and line:match("^%!%[terminalimage%]") then
+				-- Extract image path
+				local image_path = line:match("^%!%[terminalimage%]%((.+)%)")
+				local pos = { i + 1, 0 }
+				img = Snacks.image.placement.new(self.buf, image_path, {
+					pos = pos,
+					inline = true,
+					conceal = true,
+					type = "terminal",
+				})
+				self.imgs[i] = img
+				vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
+					virt_text = { { string.rep(" ", #line) } }, -- Virtual text matching the exact line length
+					virt_text_pos = "overlay",
+					priority = 100,
+				})
 			end
 		end
 	end
