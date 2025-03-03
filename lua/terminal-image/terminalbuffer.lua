@@ -11,12 +11,22 @@ function M.new(buf)
 	self.buf = buf
 	self.imgs = {}
 	self.idx = {}
-	-- local group = vim.api.nvim_create_augroup("snacks.image.inline." .. buf, { clear = true })
+	local group = vim.api.nvim_create_augroup("terminal-image.terminalbuffer." .. buf, { clear = true })
 
 	vim.api.nvim_buf_attach(buf, true, {
 		on_lines = function(bufnr, chan, changedtick, firstline, lastline, new_lastline, byte_count)
-			self:update(firstline, lastline)
+			self:add(firstline, lastline)
 		end,
+	})
+
+	local update = Snacks.util.debounce(function()
+		self:update()
+	end, { ms = 100 })
+
+	vim.api.nvim_create_autocmd("WinScrolled", {
+		group = group,
+		buffer = buf,
+		callback = vim.schedule_wrap(update),
 	})
 
 	-- vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
@@ -34,22 +44,39 @@ function M.new(buf)
 	return self
 end
 
-function M:update(firstline, lastline)
+function M:update()
+	for _, img in pairs(self.imgs) do
+		img:update()
+	end
+end
+
+function M:add(firstline, lastline)
 	for i = firstline + 1, lastline do
-		local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
-		if not line then
-			break
-		end
-		-- check if the line contains an image
-		local img = line:match("^hello")
-		if img then
-			local ns = vim.api.nvim_create_namespace("my_terminal_marks")
-			vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
-				virt_text = { { "bello", "Comment" } },
-				virt_text_pos = "overlay",
-				hl_mode = "combine",
-				priority = 10,
-			})
+		if not self.imgs[i] then
+			local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
+			if line then
+				-- check if the line contains an image
+				local img = line:match("^hello")
+				-- hide this line
+
+				if img then
+					local image_path = "/Users/colin.torney/workspace/test/im.png"
+					local pos = { i + 1, 0 }
+					img = Snacks.image.placement.new(self.buf, image_path, {
+						pos = pos,
+						inline = true,
+						conceal = true,
+						type = "terminal",
+					})
+					self.imgs[i] = img
+					local ns = vim.api.nvim_create_namespace("my_terminal_marks")
+					vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
+						virt_text = { { string.rep(" ", #line) } }, -- Virtual text matching the exact line length
+						virt_text_pos = "overlay",
+						priority = 100,
+					})
+				end
+			end
 		end
 	end
 end
