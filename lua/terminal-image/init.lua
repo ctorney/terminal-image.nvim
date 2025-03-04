@@ -1,19 +1,16 @@
+local M = {}
+
 local terminalbuffer = require("terminal-image.terminalbuffer")
+local augroup = vim.api.nvim_create_augroup("terminal-image", { clear = true })
 
-local function setup()
-	-- Create autocommand group
-	local augroup = vim.api.nvim_create_augroup("YaReplImage", { clear = true })
-
-	vim.notify("Hello from image setup", vim.log.levels.INFO)
+function M.setup()
 	vim.api.nvim_create_autocmd("TermOpen", {
 		group = augroup,
 		pattern = "*",
 		callback = function(args)
-			vim.notify("Hello from termopen", vim.log.levels.INFO)
-			local bufnr = args.buf
-			terminalbuffer.new(bufnr)
+			terminalbuffer.new(args.buf)
 		end,
 	})
 end
 
-return { setup = setup }
+return M
