@@ -8,7 +8,6 @@ M.__index = M
 local ns = vim.api.nvim_create_namespace("terminal-image.nvim")
 
 function M.new(buf)
-	vim.notify("Creating autocmd")
 	local self = setmetatable({}, M)
 	self.buf = buf
 	self.imgs = {}
@@ -40,7 +39,6 @@ end
 
 function M:add(firstline, lastline)
 	for i = firstline, lastline do
-		vim.notify("Adding image")
 		if not self.imgs[i] then
 			local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
 			if line and line:match("^%!%[terminalimage%]") then

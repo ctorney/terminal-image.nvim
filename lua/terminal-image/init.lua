@@ -6,7 +6,7 @@ local augroup = vim.api.nvim_create_augroup("terminal-image", { clear = true })
 function M.setup()
 	vim.api.nvim_create_autocmd("TermOpen", {
 		group = augroup,
-		pattern = "*",
+		pattern = "term://*",
 		callback = function(args)
 			terminalbuffer.new(args.buf)
 		end,
