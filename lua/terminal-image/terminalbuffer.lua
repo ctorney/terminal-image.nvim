@@ -8,6 +8,7 @@ M.__index = M
 local ns = vim.api.nvim_create_namespace("terminal-image.nvim")
 
 function M.new(buf)
+	vim.notify("Creating autocmd")
 	local self = setmetatable({}, M)
 	self.buf = buf
 	self.imgs = {}
@@ -22,7 +23,6 @@ function M.new(buf)
 	local update = Snacks.util.debounce(function()
 		self:update()
 	end, { ms = 100 })
-
 	vim.api.nvim_create_autocmd("WinScrolled", {
 		group = group,
 		buffer = buf,
@@ -39,7 +39,8 @@ function M:update()
 end
 
 function M:add(firstline, lastline)
-	for i = firstline + 1, lastline do
+	for i = firstline, lastline do
+		vim.notify("Adding image")
 		if not self.imgs[i] then
 			local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
 			if line and line:match("^%!%[terminalimage%]") then
