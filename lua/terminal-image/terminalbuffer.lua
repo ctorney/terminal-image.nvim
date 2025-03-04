@@ -7,6 +7,7 @@ M.__index = M
 
 local ns = vim.api.nvim_create_namespace("terminal-image.nvim")
 
+M.disabled = false
 function M.new(buf)
 	local self = setmetatable({}, M)
 	self.buf = buf
@@ -28,16 +29,34 @@ function M.new(buf)
 		callback = vim.schedule_wrap(update),
 	})
 
+	vim.api.nvim_create_autocmd("TermRequest", {
+		group = group,
+		buffer = buf,
+		callback = vim.schedule_wrap(update),
+	})
 	return self
 end
 
 function M:update()
+	vim.notify("update")
 	for _, img in pairs(self.imgs) do
 		img:update()
 	end
 end
 
+function M.disable()
+	if M.disabled then
+		M.disabled = false
+		return
+	end
+	M.disabled = true
+end
+
 function M:add(firstline, lastline)
+	vim.notify("firstline: " .. firstline .. " lastline: " .. lastline)
+	if M.disabled then
+		return
+	end
 	for i = firstline, lastline do
 		if not self.imgs[i] then
 			local line = vim.api.nvim_buf_get_lines(self.buf, i, i + 1, false)[1]
@@ -48,15 +67,15 @@ function M:add(firstline, lastline)
 					img = Snacks.image.placement.new(self.buf, image_path, {
 						pos = pos,
 						inline = true,
-						conceal = false,
+						conceal = true,
 						type = "terminal",
 					})
 					self.imgs[i] = img
-					vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
-						virt_text = { { string.rep(" ", #line + 2) } }, -- add 2 for the icon
-						virt_text_pos = "overlay",
-						priority = 100,
-					})
+					-- vim.api.nvim_buf_set_extmark(self.buf, ns, i, 0, {
+					-- 	virt_text = { { string.rep(" ", #line + 2) } }, -- add 2 for the icon
+					-- 	virt_text_pos = "overlay",
+					-- 	priority = 100,
+					-- })
 				end
 			end
 		end
