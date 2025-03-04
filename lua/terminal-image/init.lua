@@ -11,12 +11,6 @@ function M.setup()
 			terminalbuffer.new(args.buf)
 		end,
 	})
-	vim.api.nvim_set_keymap(
-		"t",
-		"<C-q>",
-		"<cmd>lua require('terminal-image.terminalbuffer').disable()<CR>",
-		{ noremap = true, silent = true }
-	)
 end
 
 return M
