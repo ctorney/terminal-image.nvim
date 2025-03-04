@@ -1,12 +1,13 @@
 ## terminal-image.nvim
 
-Experimental small plugin for showing images in neovim terminals using snacks image.
+Experimental plugin for showing images in neovim terminals using snacks image.
 
-**Note: This plugin relies on (snacks image)[https://github.com/folke/snacks.nvim/blob/main/docs/image.md] to display images in neovim terminals. If you can't see images with snacks then this definitely won't work.**
+**Note: This plugin relies on [snacks image](https://github.com/folke/snacks.nvim/blob/main/docs/image.md) to display images in neovim terminals. If you can't see images with snacks then this definitely won't work.**
+
 
 ### Installation
 
-See (snacks image)[https://github.com/folke/snacks.nvim/blob/main/docs/image.md] for supported terminals.
+See [snacks](https://github.com/folke/snacks.nvim/blob/main/docs/image.md) install instructions for supported terminals.
 
 Install with Lazy
 
