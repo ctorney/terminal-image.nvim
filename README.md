@@ -21,9 +21,7 @@ Install with Lazy
 Currently only setting is the number of images to keep in the scrollback buffer. This is set to 10 by default.
 
 ```
-opts = {
-    max_num_images = 10
-    }
+opts = { max_num_images = 10 }
 ```
 
 ### Usage
