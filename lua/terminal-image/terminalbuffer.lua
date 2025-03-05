@@ -48,7 +48,37 @@ function M.new(buf)
 	return self
 end
 
+    function pairsByKeys (t, f)
+      local a = {}
+      for n in pairs(t) do table.insert(a, n) end
+      table.sort(a, f)
+      local i = 0      -- iterator variable
+      local iter = function ()   -- iterator function
+        i = i + 1
+        if a[i] == nil then return nil
+        else return a[i], t[a[i]]
+        end
+      end
+      return iter
+    end
+
+With this function, it is easy to print those function names in alphabetical order. The loop
+
+    for name, line in pairsByKeys(lines) do
+      print(name, line)
+    end
 function M:update()
+	-- retain only the last 20 images
+	local imgs = {}
+	local extids = {}
+	for i = #self.imgs, math.max(#self.imgs - 20, 1), -1 do
+		imgs[i] = self.imgs[i]
+		extids[i] = self.extids[i]
+	end
+
+	self.imgs = imgs
+	self.extids = extids
+
 	for i, img in pairs(self.imgs) do
 		local line = vim.api.nvim_buf_get_lines(self.buf, i - 1, i, true)[1]
 		if not line or not line:match("^%!%[terminalimage%]%((.+)%)") then
