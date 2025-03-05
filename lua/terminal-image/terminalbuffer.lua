@@ -5,15 +5,16 @@
 
 local M = {}
 M.__index = M
-
+local uv = vim.uv or vim.loop
 local ns = vim.api.nvim_create_namespace("terminal-image.nvim")
 
 M.disabled = false
-function M.new(buf)
+function M.new(buf, opts)
 	local self = setmetatable({}, M)
 	self.buf = buf
 	self.imgs = {}
 	self.extids = {}
+	M.max_num_images = opts.max_num_images
 	local group = vim.api.nvim_create_augroup("terminal-image.terminalbuffer." .. buf, { clear = true })
 
 	vim.api.nvim_buf_attach(buf, true, {
@@ -23,7 +24,7 @@ function M.new(buf)
 	})
 
 	-- Create a timer that calls update every 5 seconds
-	self.timer = vim.loop.new_timer()
+	self.timer = uv.new_timer()
 	self.timer:start(
 		0,
 		5000,
@@ -48,37 +49,24 @@ function M.new(buf)
 	return self
 end
 
-    function pairsByKeys (t, f)
-      local a = {}
-      for n in pairs(t) do table.insert(a, n) end
-      table.sort(a, f)
-      local i = 0      -- iterator variable
-      local iter = function ()   -- iterator function
-        i = i + 1
-        if a[i] == nil then return nil
-        else return a[i], t[a[i]]
-        end
-      end
-      return iter
-    end
-
-With this function, it is easy to print those function names in alphabetical order. The loop
-
-    for name, line in pairsByKeys(lines) do
-      print(name, line)
-    end
 function M:update()
-	-- retain only the last 20 images
-	local imgs = {}
-	local extids = {}
-	for i = #self.imgs, math.max(#self.imgs - 20, 1), -1 do
-		imgs[i] = self.imgs[i]
-		extids[i] = self.extids[i]
+	-- delete old images if more than max_num_images
+	local a = {}
+	local n_images = 0
+	for n in pairs(self.imgs) do
+		table.insert(a, n)
+		n_images = n_images + 1
+	end
+	table.sort(a)
+	local n_remove = math.max(n_images - M.max_num_images, 0)
+	for i = 1, n_remove do
+		self.imgs[a[i]]:del()
+		vim.api.nvim_buf_del_extmark(self.buf, ns, self.extids[a[i]])
+		self.imgs[a[i]] = nil
+		self.extids[a[i]] = nil
 	end
 
-	self.imgs = imgs
-	self.extids = extids
-
+	-- delete images if the line no longer contains an image
 	for i, img in pairs(self.imgs) do
 		local line = vim.api.nvim_buf_get_lines(self.buf, i - 1, i, true)[1]
 		if not line or not line:match("^%!%[terminalimage%]%((.+)%)") then
@@ -98,7 +86,7 @@ function M:add(firstline, new_lastline)
 		if self.imgs[firstline + i] and not image_path then
 			self.imgs[firstline + i]:del()
 		end
-		-- there's no image associated with this line but there is an filepath
+		-- there's no image associated with this line but there is a filepath
 		if not self.imgs[firstline + i] and image_path then
 			local pos = { firstline + i, 0 }
 			img = Snacks.image.placement.new(self.buf, image_path, {
