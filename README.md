@@ -21,8 +21,8 @@ Install with Lazy
 Currently only setting is the number of images to keep in the scrollback buffer. This is set to 10 by default.
 
 ```
-    opts = {
-        max_num_images = 10
+opts = {
+    max_num_images = 10
     }
 ```
 
@@ -35,6 +35,6 @@ A simple way to use this is to create an alias in your shell to echo the markdow
 alias nvimage='function _nvimage() { echo "![terminalimage]($(realpath "$1"))"; }; _nvimage'
 ```
 
-For plotting in python, you can use this with the [matplotlib-backend-nvim](https://github.com/ctorney/matplotlib-backend-nvim) backend to save the image to a temp file and print the markdown to the terminal.
+For plotting in python, you can use this with [matplotlib-backend-nvim](https://github.com/ctorney/matplotlib-backend-nvim) to save the image to a temp file and print the markdown to the terminal.
 
 
