@@ -2,6 +2,7 @@
 ---@field buf number
 ---@field imgs table<number, snacks.image.Placement>
 ---@field extids table<number, number>
+---@field imgheights table<number, number>
 
 local M = {}
 M.__index = M
@@ -13,6 +14,7 @@ function M.new(buf, opts)
 	local self = setmetatable({}, M)
 	self.buf = buf
 	self.imgs = {}
+	self.imgheights = {}
 	self.extids = {}
 	M.max_num_images = opts.max_num_images
 	local group = vim.api.nvim_create_augroup("terminal-image.terminalbuffer." .. buf, { clear = true })
@@ -46,6 +48,20 @@ function M.new(buf, opts)
 		end,
 	})
 
+	vim.api.nvim_create_autocmd("WinScrolled", {
+		group = group,
+		buffer = buf,
+		callback = function()
+			vim.schedule(function()
+				vim.notify("win scrolled")
+				if self.imgs then
+					for _, img in ipairs(self.imgs) do
+						img:update()
+					end
+				end
+			end)
+		end,
+	})
 	return self
 end
 
@@ -69,7 +85,7 @@ function M:update()
 	-- delete images if the line no longer contains an image
 	for i, img in pairs(self.imgs) do
 		local line = vim.api.nvim_buf_get_lines(self.buf, i - 1, i, true)[1]
-		if not line or not line:match("^%!%[terminalimage%]%((.+)%)") then
+		if not line or not line:match("^%!%[terminalimage%]") then
 			img:del()
 			vim.api.nvim_buf_del_extmark(self.buf, ns, self.extids[i])
 			self.imgs[i] = nil
@@ -81,7 +97,19 @@ end
 function M:add(firstline, new_lastline)
 	local new_lines = vim.api.nvim_buf_get_lines(self.buf, firstline, new_lastline, true)
 	for i, line in ipairs(new_lines) do
+		-- print the line if it's not empty
+		-- if line ~= "" then
+		-- 	vim.notify(line)
+		-- end
+
+		local splitline = false
+		local image_present = line:match("^%!%[terminalimage%]")
 		local image_path = line:match("^%!%[terminalimage%]%((.+)%)")
+		if image_present and not image_path then
+			local combined_line = line .. new_lines[i + 1]
+			image_path = combined_line:match("^%!%[terminalimage%]%((.+)%)")
+			splitline = true
+		end
 		-- there's an image associated with this line but no longer any filepath
 		if self.imgs[firstline + i] and not image_path then
 			self.imgs[firstline + i]:del()
@@ -95,14 +123,46 @@ function M:add(firstline, new_lastline)
 				conceal = true,
 				type = "terminal",
 			})
+
+			-- Access the height from the state
+			local height = img:state().loc.height
+
+			-- vim.notify(height)
 			self.imgs[firstline + i] = img
 			self.extids[firstline + i] = vim.api.nvim_buf_set_extmark(self.buf, ns, firstline + i - 1, 0, {
 				virt_text = { { string.rep(" ", #line + 2) } }, -- add 2 for the icon
 				virt_text_pos = "overlay",
 				priority = 100,
 			})
+			if splitline then
+				vim.api.nvim_buf_set_extmark(self.buf, ns, firstline + i, 0, {
+					virt_text = { { string.rep(" ", #new_lines[i + 1] + 2) } }, -- add 2 for the icon
+					virt_text_pos = "overlay",
+					priority = 100,
+				})
+			end
+			self.imgheights[firstline + i] = height
 		end
 	end
+
+	local winheight = vim.fn.winheight(vim.fn.bufwinid(self.buf))
+	local lastline = vim.api.nvim_buf_line_count(self.buf)
+	local linecount = 0
+	local topline = 1
+
+	for i = lastline, math.max(1, lastline - winheight), -1 do
+		if self.imgs[i] then
+			linecount = linecount + self.imgheights[i]
+		else
+			linecount = linecount + 1
+		end
+		if linecount > winheight - 1 then
+			break
+		end
+		topline = i
+	end
+
+	vim.fn.winrestview({ topline = topline })
 end
 
 return M
