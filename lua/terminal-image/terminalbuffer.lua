@@ -183,10 +183,10 @@ function M:add(firstline, new_lastline)
 				height = height + 1
 			end
 			self.imgheights[firstline + i] = height
-			if M.autoscroll then
-				self:scroll()
-			end
 		end
+	end
+	if M.autoscroll then
+		self:scroll()
 	end
 end
 
