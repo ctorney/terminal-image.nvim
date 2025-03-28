@@ -5,6 +5,7 @@ local augroup = vim.api.nvim_create_augroup("terminal-image", { clear = true })
 
 local default_opts = {
 	max_num_images = 10,
+	autoscroll = true,
 }
 
 function M.setup(user_opts)

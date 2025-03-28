@@ -17,6 +17,7 @@ function M.new(buf, opts)
 	self.imgheights = {}
 	self.extids = {}
 	M.max_num_images = opts.max_num_images
+	M.autoscroll = opts.autoscroll
 	local group = vim.api.nvim_create_augroup("terminal-image.terminalbuffer." .. buf, { clear = true })
 
 	vim.api.nvim_buf_attach(buf, true, {
@@ -53,7 +54,6 @@ function M.new(buf, opts)
 		buffer = buf,
 		callback = function()
 			vim.schedule(function()
-				vim.notify("win scrolled")
 				if self.imgs then
 					for _, img in ipairs(self.imgs) do
 						img:update()
@@ -90,25 +90,66 @@ function M:update()
 			vim.api.nvim_buf_del_extmark(self.buf, ns, self.extids[i])
 			self.imgs[i] = nil
 			self.extids[i] = nil
+			self.imgheights[i] = nil
 		end
 	end
+end
+
+function M:scroll()
+	-- scroll the buffer so that the last output is visible
+	local winid = vim.fn.bufwinid(self.buf)
+	-- only scroll if the buffer is not active
+	if windid == vim.api.nvim_get_current_win() then
+		return
+	end
+	local winheight = vim.fn.winheight(windid)
+	local lastline = vim.api.nvim_buf_line_count(self.buf)
+	-- this includes all lines so need to find first non empty line
+	local linecount = 0
+	local topline = 1
+	local startcount = false
+
+	if lastline > winheight then
+		startcount = true
+	end
+
+	for i = lastline, math.max(1, lastline - winheight), -1 do
+		if self.imgs[i] then
+			linecount = linecount + self.imgheights[i]
+		else
+			if startcount then
+				linecount = linecount + 1
+			else
+				local line = vim.api.nvim_buf_get_lines(self.buf, i - 1, i, true)[1]
+				-- check if the line is not empty
+				if line and line:match("%S") then
+					startcount = true
+					linecount = linecount + 1
+				end
+			end
+		end
+		if linecount > winheight then
+			break
+		end
+		topline = i
+	end
+
+	vim.fn.winrestview({ topline = topline, lnum = winheight })
 end
 
 function M:add(firstline, new_lastline)
 	local new_lines = vim.api.nvim_buf_get_lines(self.buf, firstline, new_lastline, true)
 	for i, line in ipairs(new_lines) do
-		-- print the line if it's not empty
-		-- if line ~= "" then
-		-- 	vim.notify(line)
-		-- end
-
 		local splitline = false
 		local image_present = line:match("^%!%[terminalimage%]")
 		local image_path = line:match("^%!%[terminalimage%]%((.+)%)")
 		if image_present and not image_path then
-			local combined_line = line .. new_lines[i + 1]
-			image_path = combined_line:match("^%!%[terminalimage%]%((.+)%)")
-			splitline = true
+			if new_lines[i + 1] then
+				-- check if the next line is an image
+				local combined_line = line .. new_lines[i + 1]
+				image_path = combined_line:match("^%!%[terminalimage%]%((.+)%)")
+				splitline = true
+			end
 		end
 		-- there's an image associated with this line but no longer any filepath
 		if self.imgs[firstline + i] and not image_path then
@@ -127,7 +168,6 @@ function M:add(firstline, new_lastline)
 			-- Access the height from the state
 			local height = img:state().loc.height
 
-			-- vim.notify(height)
 			self.imgs[firstline + i] = img
 			self.extids[firstline + i] = vim.api.nvim_buf_set_extmark(self.buf, ns, firstline + i - 1, 0, {
 				virt_text = { { string.rep(" ", #line + 2) } }, -- add 2 for the icon
@@ -140,29 +180,14 @@ function M:add(firstline, new_lastline)
 					virt_text_pos = "overlay",
 					priority = 100,
 				})
+				height = height + 1
 			end
 			self.imgheights[firstline + i] = height
+			if M.autoscroll then
+				self:scroll()
+			end
 		end
 	end
-
-	local winheight = vim.fn.winheight(vim.fn.bufwinid(self.buf))
-	local lastline = vim.api.nvim_buf_line_count(self.buf)
-	local linecount = 0
-	local topline = 1
-
-	for i = lastline, math.max(1, lastline - winheight), -1 do
-		if self.imgs[i] then
-			linecount = linecount + self.imgheights[i]
-		else
-			linecount = linecount + 1
-		end
-		if linecount > winheight - 1 then
-			break
-		end
-		topline = i
-	end
-
-	vim.fn.winrestview({ topline = topline })
 end
 
 return M
