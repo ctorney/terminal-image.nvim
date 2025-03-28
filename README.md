@@ -18,7 +18,7 @@ Install with Lazy
 },
 ```
 
-Currently the only settings are the number of images to keep in the scrollback buffer and whether to automatically scroll to the end of the buffer. The maximum number of mages is set to 10 by default and the autoscroll is set to true meaning that the buffer will scroll to show any images or other outputs if the buffer is not active (main use case is when using a repl plugin like [yarepl](https://github.com/milanglacier/yarepl.nvim).
+Currently the only settings are the number of images to keep in the scrollback buffer and whether to automatically scroll to the end of the buffer. The maximum number of mages is set to 10 by default and the autoscroll is set to true meaning that the buffer will scroll to show any images or other outputs if the buffer is not active (main use case is when using a repl plugin like [yarepl.nvim](https://github.com/milanglacier/yarepl.nvim)).
 
 ```
 opts = { max_num_images = 10, autoscroll = true}
